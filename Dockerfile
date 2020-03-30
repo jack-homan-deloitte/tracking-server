@@ -18,5 +18,5 @@ COPY idiet idiet
 EXPOSE 5000
 HEALTHCHECK CMD curl --fail http://localhost:5000/api/hc || exit 1
 
-CMD ["--bind", "0.0.0.0:5000", "--workers=4", "idiet.tracking.wsgi:create_app()"]
+CMD ["--bind", "0.0.0.0:80", "--workers=4", "idiet.tracking.wsgi:create_app()"]
 ENTRYPOINT ["gunicorn"]
