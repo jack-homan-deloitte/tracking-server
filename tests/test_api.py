@@ -5,7 +5,10 @@ import webtest
 
 @pytest.fixture
 def test_app():
-    app = webtest.TestApp(create_app())
+    config = {
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"
+    }
+    app = webtest.TestApp(create_app(**config))
     return app
 
 
