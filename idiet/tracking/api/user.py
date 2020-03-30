@@ -54,5 +54,4 @@ class CreateUser(Resource):
                 f"User '{args.username}' already exists", status=403
             ))
 
-        add_user(args.username, args.password, args.email)
-        return Response(status=200)
+        return self.put()

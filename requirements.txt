@@ -4,5 +4,6 @@ Flask
 Flask-RESTful
 Flask-SQLAlchemy
 Flask-HTTPAuth
+Flask-Cors
 werkzeug
 psycopg2-binary
