@@ -5,4 +5,4 @@ Flask-RESTful
 Flask-SQLAlchemy
 Flask-HTTPAuth
 werkzeug
-psycopg2
+psycopg2-binary
