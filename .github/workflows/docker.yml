@@ -1,7 +1,10 @@
 name: Publish Docker Image
 env:
   IMAGE_TAG: idiet.tracking
-on: [push]
+on:
+  push:
+    tags:
+      - v2020.*
 jobs:
   build:
     runs-on: ubuntu-latest
