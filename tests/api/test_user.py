@@ -1,10 +1,7 @@
 import pytest
 import webtest
-from flask_restful import Api
 
-from idiet.tracking.api import user
 from idiet.tracking.wsgi import create_app
-from idiet.tracking.models import User
 
 
 @pytest.fixture

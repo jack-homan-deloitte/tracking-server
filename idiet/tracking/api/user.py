@@ -1,6 +1,6 @@
 import base64
 
-from flask import request, Response, abort
+from flask import Response, abort
 from flask_restful import Resource, reqparse
 
 from .. import models
@@ -24,8 +24,10 @@ def user_exists(username):
 
 def parser_create_user():
     parser = reqparse.RequestParser()
-    parser.add_argument("username", required=True, type=str, help="user username")
-    parser.add_argument("password", required=True, type=str, help="password for user account")
+    parser.add_argument("username", required=True,
+                        type=str, help="user username")
+    parser.add_argument("password", required=True,
+                        type=str, help="password for user account")
     parser.add_argument("email", required=True, type=str, help="users email")
     args = parser.parse_args(strict=True)
     return args
@@ -40,7 +42,7 @@ class CreateUser(Resource):
         args = parser_create_user()
 
         if not user_exists(args.username):
-            user_id = add_user(args.username, args.password, args.email)
+            add_user(args.username, args.password, args.email)
 
         return {"status": 200, "message": f"created user {args.username}"}
 
@@ -48,7 +50,9 @@ class CreateUser(Resource):
         args = parser_create_user()
 
         if user_exists(args.username):
-            abort(Response(f"User '{args.username}' already exists", status=403))
+            abort(Response(
+                f"User '{args.username}' already exists", status=403
+            ))
 
         add_user(args.username, args.password, args.email)
         return Response(status=200)
