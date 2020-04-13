@@ -1,4 +1,5 @@
 -rrequirements.txt
+faker
 pytest
 pytest-cov
 WebTest

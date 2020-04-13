@@ -1,57 +1,69 @@
-import base64
+import datetime
 
-from flask import Response, abort
-from flask_restful import Resource, reqparse
+import attr
+from flask import views, g, jsonify, make_response, request
 
-from .. import models
-
-
-def add_user(username, password, email):
-    hashed = base64.b64encode(password.encode("utf-8"))
-    user = models.User(username=username,
-                       hashed_pw=hashed,
-                       email=email)
-    models.db.session.add(user)
-    models.db.session.commit()
-    user = models.User.query.filter_by(username=username).first()
-    return user.id
+from idiet.tracking.auth.views import auth
+from idiet.tracking.core import api
 
 
-def user_exists(username):
-    user = models.User.query.filter_by(username=username).first()
-    return user is not None
+@attr.s
+class UserProfile(object):
+
+    _profiles = {}
+
+    first_name = attr.ib(factory=str)
+    last_name = attr.ib(factory=str)
+    date_of_birth = attr.ib(default=None)
+
+    def as_dict(self):
+        return attr.asdict(self)
+
+    @classmethod
+    def get(cls, user):
+        user_profile = cls._profiles.get(user.id)
+        return user_profile
+
+    @classmethod
+    def add(cls, profile, user):
+        cls._profiles[user.id] = profile
+        return profile
 
 
-def parser_create_user():
-    parser = reqparse.RequestParser()
-    parser.add_argument("username", required=True,
-                        type=str, help="user username")
-    parser.add_argument("password", required=True,
-                        type=str, help="password for user account")
-    parser.add_argument("email", required=True, type=str, help="users email")
-    args = parser.parse_args(strict=True)
-    return args
+class UserProfileApi(views.MethodView):
 
+    @auth.login_required
+    def get(self):
+        user = g.user
+        profile = UserProfile.get(user)
+        if profile:
+            response = profile.as_dict()
+        else:
+            response = {}
+        return make_response(jsonify(response), 200)
 
-class CreateUser(Resource):
-
-    def put(self):
-        """
-        idempotent
-        """
-        args = parser_create_user()
-
-        if not user_exists(args.username):
-            add_user(args.username, args.password, args.email)
-
-        return {"status": 200, "message": f"created user {args.username}"}
-
+    @auth.login_required
     def post(self):
-        args = parser_create_user()
+        user = g.user
+        profile = UserProfile.get(user)
+        post_data = request.get_json()
 
-        if user_exists(args.username):
-            abort(Response(
-                f"User '{args.username}' already exists", status=403
-            ))
+        first_name = post_data.get("first-name")
+        last_name = post_data.get("last-name")
+        date_of_birth = post_data.get("dob")
 
-        return self.put()
+        profile = UserProfile(first_name=first_name, last_name=last_name,
+                              date_of_birth=date_of_birth)
+        UserProfile.add(profile, user)
+        response = {
+            "status": "success",
+            "message": "information updated"
+        }
+        return make_response(jsonify(response), 200)
+
+
+api.add_url_rule(
+    "/user/profile",
+    view_func=UserProfileApi.as_view("user_profile_api"),
+    methods=["GET", "POST"]
+)

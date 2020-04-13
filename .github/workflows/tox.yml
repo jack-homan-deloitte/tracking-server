@@ -29,4 +29,6 @@ jobs:
       - name: Install Tox
         run: python -m pip install tox
       - name: Test ${{ matrix.tox.env }}
+        env:
+          HYPOTHESIS_PROFILE: github
         run: tox -v -e ${{ matrix.tox.env }}

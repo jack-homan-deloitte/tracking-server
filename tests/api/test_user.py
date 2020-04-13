@@ -1,71 +1,55 @@
-import pytest
+
+from hypothesis import given, strategies as st
 import webtest
 
-from idiet.tracking.wsgi import create_app
+from idiet.tracking.core import create_app
 
 
-@pytest.fixture
-def test_app():
-    config = {
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"
-    }
-    app = create_app(**config)
-    client = webtest.TestApp(app)
-    return client
+def _create_app():
+    app = create_app()
+    test_app = webtest.TestApp(app)
+    return test_app
 
 
-class TestCreateUser(object):
+class _Patch(object):
+    def setup_example(self):
+        from idiet.tracking.auth.views import User
+        from idiet.tracking.api.user import UserProfile
+        User._users = {}
+        UserProfile._profiles = {}
 
-    def test_create_user_put(self, test_app):
-        params = {
-            "username":  "tomhanks",
-            "email": "tom.hanks@gmail.com",
-            "password": "pa$$w0rd"
+    def register_user(self, app, email, password):
+        response = app.post_json("/auth/register", {
+            "email": email, "password": password
+        }, status=201)
+        token = response.json["auth_token"]
+        return token
+
+
+class TestUserProfileApi(_Patch):
+
+    @given(app=st.builds(_create_app), email=st.emails(), password=st.text())
+    def test_get_user(self, app, email, password):
+        token = self.register_user(app, email, password)
+        headers = {
+            "Authorization": f"Bearer {token}"
         }
 
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
+        profile = app.get("/api/user/profile", headers=headers)
+        assert profile.status_code == 200
+        assert profile.json == {}
 
-    def test_create_user_put_idempotent(self, test_app):
-        params = {
-            "username":  "tomhanks",
-            "email": "tom.hanks@gmail.com",
-            "password": "pa$$w0rd"
+    @given(app=st.builds(_create_app), email=st.emails(), password=st.text())
+    def test_get_user_can_post_info(self, app, email, password):
+        token = self.register_user(app, email, password)
+        headers = {
+            "Authorization": f"Bearer {token}"
         }
-
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
-        resp = test_app.put_json("/api/user/create", params)
-        assert resp.status_int == 200
-
-    def test_create_user_returns_invalid_when_missing_args(self, test_app):
-        params = {
-            "username":  "tomhanks",
-            "email": "tom.hanks@gmail.com",
+        payload = {
+            "first-name": "Jack",
+            "last-name": "Homan",
+            "dob": "1990-12-17"
         }
-
-        resp = test_app.put_json("/api/user/create", params, status=400)
-        assert resp.status_int == 400
-
-    def test_create_user_post(self, test_app):
-        params = {
-            "username":  "tomhanks",
-            "email": "tom.hanks@gmail.com",
-            "password": "pa$$w0rd"
-        }
-
-        resp = test_app.post_json("/api/user/create", params, status=200)
-        resp = test_app.post_json("/api/user/create", params, status=403)
-        assert resp.status_code == 403
-
-
-class TestGetUser(object):
-
-    def test_get_user(self, test_app):
-        pass
+        response = app.post_json("/api/user/profile", payload, headers=headers)
+        assert response.json["status"] == "success"
+        
