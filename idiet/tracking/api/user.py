@@ -15,6 +15,8 @@ class UserProfile(object):
     first_name = attr.ib(factory=str)
     last_name = attr.ib(factory=str)
     date_of_birth = attr.ib(default=None)
+    sex = attr.ib(type=str, default=None)
+    member_since = attr.ib(factory=datetime.date.today)
 
     def as_dict(self):
         return attr.asdict(self)
@@ -28,6 +30,14 @@ class UserProfile(object):
     def add(cls, profile, user):
         cls._profiles[user.id] = profile
         return profile
+
+    @classmethod
+    def update(cls, profile, user):
+        self = cls._profiles[user.id]
+        self.first_name = profile.first_name or self.first_name
+        self.last_name = profile.last_name or self.last_name
+        self.date_of_birth = profile.date_of_birth or self.date_of_birth
+        self.sex = profile.sex or self.sex
 
 
 class UserProfileApi(views.MethodView):
@@ -51,7 +61,7 @@ class UserProfileApi(views.MethodView):
         first_name = post_data.get("first-name")
         last_name = post_data.get("last-name")
         date_of_birth = post_data.get("dob")
-
+        sex = post_data.get("sex")
         profile = UserProfile(first_name=first_name, last_name=last_name,
                               date_of_birth=date_of_birth)
         UserProfile.add(profile, user)
