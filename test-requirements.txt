@@ -4,3 +4,6 @@ pytest
 pytest-cov
 WebTest
 hypothesis
+docker
+gitpython
+requests

@@ -2,9 +2,8 @@ import base64
 import datetime
 import os
 
-import attr
 import jwt
-from flask import request, make_response, jsonify, url_for, Blueprint, g
+from flask import request, make_response, jsonify, Blueprint, g
 from flask.views import MethodView
 from flask_httpauth import HTTPTokenAuth
 from werkzeug.security import generate_password_hash
@@ -12,7 +11,6 @@ from werkzeug.security import generate_password_hash
 
 auth_bp = Blueprint("auth", __name__)
 auth = HTTPTokenAuth(scheme="Bearer")
-
 
 
 def get_secret(key=os.urandom(16)):
@@ -35,7 +33,7 @@ class Token(object):
     def delete(cls, token):
         del cls._token[token]
         return token
-    
+
     @classmethod
     def user_from_token(cls, token):
         user = cls._tokens.get(token)
@@ -52,7 +50,6 @@ class User(object):
         self.id = unique_id
 
     def auth_token(self):
-        user_id = self.id
         now = datetime.datetime.utcnow()
         payload = {
             "aud": self.id,
@@ -65,7 +62,7 @@ class User(object):
 
     def verify_token(self, token):
         try:
-            payload = jwt.decode(token, get_secret(), algorithm="HS256")
+            jwt.decode(token, get_secret(), algorithm="HS256")
         except jwt.ExpiredSignatureError:
             # I think I probably don't need this
             # time > payload["exp"]
@@ -97,10 +94,6 @@ class User(object):
         if user.id in cls._users:
             return user
         return None
-
-
-def get_secret():
-    return "MY_SECRET_KEY"
 
 
 class RegisterApi(MethodView):

@@ -8,3 +8,4 @@ Flask-Cors
 pyjwt
 werkzeug
 psycopg2-binary
+toml

@@ -1,41 +1,53 @@
-from os import environ
-
-from flask import Flask, Blueprint, request
+from flask import Flask
+from flask import Blueprint, g, current_app, jsonify, make_response
 from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
 from flask_httpauth import HTTPTokenAuth
+from sqlalchemy import create_engine
 
-from .auth import auth_bp
-
-
-api = Blueprint("api", __name__, url_prefix="/api")
-db = SQLAlchemy()
-auth = HTTPTokenAuth(scheme="token")
+from idiet.tracking.backend.db import SqlAlchemyBackend
 
 
-class Config:
-     TESTING = environ.get('TESTING')
-     FLASK_DEBUG = environ.get('FLASK_DEBUG')
-     SECRET_KEY = environ.get('SECRET_KEY', "MY_SECRET_KEY_IS")
-     # Database
-     SQLALCHEMY_DATABASE_URI = environ.get('SQLALCHEMY_DATABASE_URI')
-     SQLALCHEMY_TRACK_MODIFICATIONS = environ.get(
-         'SQLALCHEMY_TRACK_MODIFICATIONS', False
-     )
+token_auth = HTTPTokenAuth(scheme="Bearer")
 
 
-@api.before_request
-def before_request():
-    if request.path in ("/api/user/create", "/api/hc"):
-        # bypass create and health check
-        return
+class Tracking(Flask):
+
+    def __init__(self, backend=None, config=None, secret_key=None,
+                 *args, **kwargs):
+        super().__init__(__name__, *args, **kwargs)
+        self.backend = backend
+        self.app_config = config
+        self.secret_key = secret_key
 
 
-def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
-    import idiet.tracking.api
+app = Blueprint("app", __name__)
+api = Blueprint("api", __name__)
+
+
+@token_auth.verify_token
+def verify_token(token):
+    backend = current_app.backend
+    secret_key = current_app.secret_key
+    user = backend.user_from_token(token, secret_key)
+    if user:
+        g.user = user
+        return True
+    return False
+
+
+@api.route("/api/hc")
+def hc():
+    return make_response(jsonify({"status": "success"}), 200)
+
+
+def create_app(config=None, backend=None, secret_key=None):
+    if backend is None:
+        engine = create_engine("sqlite://")
+        backend = SqlAlchemyBackend(engine)
+        backend.init()
+    app = Tracking(backend=backend, config=(config or {}),
+                   secret_key=secret_key)
+    import idiet.tracking.api  # noqa: F401
     app.register_blueprint(api)
-    app.register_blueprint(auth_bp)
     CORS(app)
     return app
