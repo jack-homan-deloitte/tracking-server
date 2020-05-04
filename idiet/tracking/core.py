@@ -1,3 +1,5 @@
+import os
+
 from flask import Flask
 from flask import Blueprint, g, current_app, jsonify, make_response
 from flask_cors import CORS
@@ -45,6 +47,8 @@ def create_app(config=None, backend=None, secret_key=None):
         engine = create_engine("sqlite://")
         backend = SqlAlchemyBackend(engine)
         backend.init()
+    if config and config.get("secret-key") == "":
+        raise ValueError("Cannot create app without encryption key")
     app = Tracking(backend=backend, config=(config or {}),
                    secret_key=secret_key)
     import idiet.tracking.api  # noqa: F401

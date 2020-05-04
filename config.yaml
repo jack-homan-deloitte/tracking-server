@@ -1,0 +1,29 @@
+schemaVersion: "2.0.0"
+metadataTest:
+  env:
+    - key: IDIET_TRACKING_SECRET
+      value: ""
+  exposedPorts: ["8080"]
+  workdir: "/srv/idiet/tracking"
+commandTests:
+  - name: "Server Exists"
+    command: which
+    args: ["gunicorn"]
+    expectedOutput: ["/usr/local/bin/gunicorn"]
+  - name: "Run test suite"
+    setup: 
+      - ["python", "-m", "pip", "install", "pytest", "--user"]
+      - ["python", "-m", "pip", "install", "-r", "/test-requirements.txt", "--user"]
+    command: sh
+    args:
+      - "-c"
+      - 'python -m pytest /tests'
+fileExistenceTests:
+  - name: WSGI Python Definition
+    path: /srv/idiet/tracking/idiet/tracking/wsgi.py
+    uid: 1000
+    shouldExist: true
+  - name: Gunicorn is Executable
+    path: /usr/local/bin/gunicorn
+    shouldExist: true
+    isExecutableBy: any

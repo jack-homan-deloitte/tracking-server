@@ -352,3 +352,30 @@ TOTAL                                 408    167     22      1    58%
 
 (0.00 durations hidden.  Use -vv to show these durations.)
 ```
+
+
+## Monday - May 4, 2020
+### Test Case - Encryption Key Enabled
+
+Verify that the application will not be created without an encryption key. The
+encryption key is used for storing hashes of sensitive data and for generating
+OAuth tokens for API requests.
+
+```python
+def test_create_app_fails_when_missing_key(self):
+
+    config = {
+        "secret-key": ""
+    }
+    with pytest.raises(ValueError):
+        app = create_app(config=config)
+```
+
+### Test Case - Encryption Key Not Stored in application binary
+Verify the secrets aren't being stored in the application binary
+```yaml
+metadataTest:
+env:
+  - key: IDIET_TRACKING_SECRET
+    value: ""
+```

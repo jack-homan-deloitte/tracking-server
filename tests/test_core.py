@@ -1,3 +1,5 @@
+import pytest
+
 from idiet.tracking.core import create_app
 from idiet.tracking.backend.db import SqlAlchemyBackend
 
@@ -23,3 +25,11 @@ class TestTracking(object):
 
         app = create_app(config=config)
         assert app.app_config["secret-key"] == "my-secret-key"
+
+    def test_create_app_fails_when_missing_key(self):
+
+        config = {
+            "secret-key": ""
+        }
+       with pytest.raises(ValueError): 
+            app = create_app(config=config)
